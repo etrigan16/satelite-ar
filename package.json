@@ -1,0 +1,9 @@
+{
+  "name": "satelite.ar",
+  "version": "1.0",
+  "description": "Blog de sitio que toma datos de la Nasa para explicar situaciones, fenomenos o informacion relevante de Argentina y Latinoamerica.",
+  "main": "main.js",
+  "repository": "https://github.com/etrigan16/satelite-ar",
+  "author": "Guille Fernandez",
+  "license": "MIT"
+}
