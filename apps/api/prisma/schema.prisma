@@ -1,0 +1,69 @@
+// Este es el plano de nuestra base de datos
+// Ubicación: apps/api/prisma/schema.prisma
+
+datasource db {
+  provider     = "postgresql"
+  // Prisma buscará el .env en la raíz y encontrará nuestra URL de Docker
+  url          = env("DATABASE_URL")
+  // Base sombra explícita para Prisma Migrate (evita errores P1010)
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+  // ¡Crítico! Necesario para Vercel Postgres (serverless)
+  relationMode = "prisma"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// --- Nuestro Modelo de Datos (El Plano Correcto) ---
+
+model Post {
+  // ID CUID, no numérico
+  id        String   @id @default(cuid())
+  
+  // Título ilimitado
+  title     String   @db.Text
+  // Slug para SEO
+  slug      String   @unique
+  // Contenido ilimitado (no opcional)
+  content   String   @db.Text
+  
+  // Estado (Enum)
+  status    Status   @default(DRAFT)
+  // Fecha del evento (¡Crítico!)
+  eventDate DateTime @map("event_date")
+
+  // Campos de la fuente (¡Crítico!)
+  sourceApiName   String? @map("source_api_name")
+  sourceImageUrl  String? @map("source_image_url")
+  sourceDataUrl   String? @map("source_data_url")
+
+  // Campos de auditoría (con mapeo snake_case)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relación con Tag
+  tags Tag[]
+
+  // Mapeo de nombre de tabla
+  @@map("posts")
+}
+
+model Tag {
+  id    String @id @default(cuid())
+  
+  name  String @unique
+  // Slug para SEO
+  slug  String @unique
+
+  // Relación con Post
+  posts Post[]
+
+  @@map("tags")
+}
+
+// Nuestro Enum
+enum Status {
+  DRAFT
+  PUBLISHED
+}
