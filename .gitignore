@@ -1,0 +1,14 @@
+.vercel
+node_modules
+.env
+
+# Turborepo cache
+.turbo/
+
+# Build outputs
+apps/**/dist/
+apps/web/.next/
+
+# IDE/OS
+.DS_Store
+Thumbs.db
