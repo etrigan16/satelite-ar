@@ -1,65 +1,72 @@
-import Image from "next/image";
+// Home / Landing B2B según especificaciones.
+// Hero + Sectors + Featured Reports + Final CTA.
+// Usa componentes estilo shadcn (Button, Card) y utilidades Tailwind.
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { SectorCard } from "@/components/shared/sector-card";
+import { ReportCard } from "@/components/shared/report-card";
 
 export default function Home() {
+  const sectors = [
+    { slug: "agricultura", title: "Agricultura y Ganadería", description: "Optimice cosechas, monitoree sequías y gestione recursos." },
+    { slug: "energia", title: "Energía", description: "Monitoreo de infraestructura y riesgos ambientales." },
+    { slug: "logistica", title: "Logística", description: "Rutas, puertos y cadenas de suministro optimizadas." },
+  ];
+
+  const featuredReports = [
+    { slug: "sequias-pampa-2025", title: "Impacto de la Sequía en la Pampa Húmeda: Análisis de Julio 2025", sector: "Agricultura", publishedAt: "10 Nov 2025" },
+    { slug: "incendios-patagonia-2025", title: "Incendios en Patagonia: evaluación de impacto y respuesta", sector: "Ambiente", publishedAt: "08 Nov 2025" },
+    { slug: "hidricos-cuyo-2025", title: "Gestión de recursos hídricos en Cuyo: tendencias 2025", sector: "Energía", publishedAt: "01 Nov 2025" },
+  ];
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="container mx-auto max-w-6xl px-6 py-10">
+      {/* Hero Section */}
+      <section className="text-center mb-12">
+        <h1 className="text-4xl font-bold mb-4">Inteligencia Satelital para Decisiones Estratégicas en Argentina</h1>
+        <p className="text-muted-foreground mb-6">
+          Traducimos datos complejos de NASA en reportes accionables para su sector.
+        </p>
+        <div className="flex flex-wrap items-center justify-center gap-4">
+          <Link href="/reportes"><Button className="px-6" size="lg">Ver Reportes</Button></Link>
+          <Link href="/contacto"><Button variant="outline" className="px-6" size="lg">Solicitar Consulta</Button></Link>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+      </section>
+
+      {/* Sectors Section */}
+      <section className="mb-12">
+        <h2 className="text-2xl font-semibold mb-6">Soluciones por Sector</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {sectors.map((s) => (
+            <SectorCard key={s.slug} name={s.title} description={s.description} slug={s.slug} />
+          ))}
+        </div>
+      </section>
+
+      {/* Featured Reports */}
+      <section className="mb-12">
+        <h2 className="text-2xl font-semibold mb-6">Nuestros Últimos Análisis</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {featuredReports.map((r) => (
+            <ReportCard
+              key={r.slug}
+              title={r.title}
+              summary={undefined}
+              sector={r.sector}
+              slug={r.slug}
+              tags={["Destacado"]}
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+          ))}
         </div>
-      </main>
+      </section>
+
+      {/* Final CTA */}
+      <section className="text-center border rounded-lg p-8">
+        <h2 className="text-2xl font-semibold mb-4">¿Listo para potenciar su negocio con datos?</h2>
+        <Link href="/contacto">
+          <Button size="lg" className="px-6">Hable con un Experto</Button>
+        </Link>
+      </section>
     </div>
   );
 }
