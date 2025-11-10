@@ -1,6 +1,9 @@
+// PostCSS config para Tailwind CSS v3 + Autoprefixer
+// Referencia: https://tailwindcss.com/docs/installation
 const config = {
   plugins: {
-    "@tailwindcss/postcss": {},
+    tailwindcss: {},
+    autoprefixer: {},
   },
 };
 

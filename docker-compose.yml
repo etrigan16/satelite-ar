@@ -1,0 +1,39 @@
+# ---------------------------------------------------
+# docker-compose.yml (Solo para desarrollo local)
+# ---------------------------------------------------
+version: '3.8'
+
+services:
+  # 1. Servicio de Base de Datos PostgreSQL
+  db:
+    image: postgres:15-alpine
+    container_name: satelite-ar-db
+    restart: always
+    ports:
+      - "5433:5432" # Usa 5433 en host para evitar conflictos con Postgres local
+    environment:
+      POSTGRES_USER: "admin"
+      POSTGRES_PASSWORD: "password123"
+      POSTGRES_DB: "satelite_ar_db"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d satelite_ar_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # 2. Servicio de Caché (Buena práctica tenerlo)
+  cache:
+    image: redis:7-alpine
+    container_name: satelite-ar-cache
+    restart: always
+    ports:
+      - "6379:6379" # Expone el puerto de Redis
+    volumes:
+      - redis_data:/data
+
+# 3. Define los volúmenes para persistir datos
+volumes:
+  postgres_data:
+  redis_data:
