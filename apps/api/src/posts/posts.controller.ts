@@ -1,7 +1,8 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
 import { PostsService } from "./posts.service";
 import { CreatePostDto } from "./dto/create-post.dto";
 import { UpdatePostDto } from "./dto/update-post.dto";
+import { AdminGuard } from "../common/guards/admin.guard";
 
 // Controlador REST para Posts
 // Documentación Swagger: se recomienda instalar @nestjs/swagger y anotar cada endpoint
@@ -30,18 +31,21 @@ export class PostsController {
 
   // POST /posts
   @Post()
+  @UseGuards(AdminGuard)
   async create(@Body() dto: CreatePostDto) {
     return this.postsService.create(dto);
   }
 
   // PATCH /posts/:id
   @Patch(":id")
+  @UseGuards(AdminGuard)
   async update(@Param("id") id: string, @Body() dto: UpdatePostDto) {
     return this.postsService.update(id, dto);
   }
 
   // DELETE /posts/:id
   @Delete(":id")
+  @UseGuards(AdminGuard)
   async remove(@Param("id") id: string) {
     await this.postsService.remove(id);
     return { success: true };
