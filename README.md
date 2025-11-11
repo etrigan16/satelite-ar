@@ -107,3 +107,126 @@ yarn test
 Mantén este README actualizado conforme avances: añadir endpoints, scripts y
 flujos de despliegue. Es el principal recurso para onboarding del equipo.
 -->
+# satelite.ar – Portal de Curación
+## Configuración de credenciales de administración (Quick Protection)
+
+Este proyecto incluye una protección rápida para el panel de administración y las operaciones de creación/edición de posts/tags. Las credenciales y tokens se definen mediante variables de entorno.
+
+- Frontend (`apps/web/.env.local`):
+  - `ADMIN_UI_USER`: usuario de login admin (solo servidor)
+  - `ADMIN_UI_PASS`: contraseña de login admin (solo servidor)
+  - `ADMIN_UI_SESSION_TOKEN`: token de sesión estático para la cookie `admin_session`
+  - `ADMIN_API_TOKEN`: token compartido para mutaciones admin (debe coincidir con backend)
+  - `API_BASE_URL`: URL del backend (por defecto `http://localhost:3001`)
+
+- Backend (`apps/api/.env`):
+  - `ADMIN_API_TOKEN`: token compartido para validar el header `x-admin-token`
+
+Ejemplo rápido (copiar desde `.env.example`):
+
+```ini
+# apps/web/.env.local
+ADMIN_UI_USER=admin
+ADMIN_UI_PASS=changeme-LocalOnly!
+ADMIN_UI_SESSION_TOKEN=3b0f0f09b36c4f5d8c3e1b7a8a6e4c12
+ADMIN_API_TOKEN=local-api-token-123
+API_BASE_URL=http://localhost:3001
+
+# apps/api/.env
+ADMIN_API_TOKEN=local-api-token-123
+```
+
+Generar tokens seguros:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+Buenas prácticas de seguridad:
+- No exponer secretos con `NEXT_PUBLIC_*`.
+- No commitear `.env` ni `.env.local`.
+- En producción, configurar cookies como `httpOnly`, `secure`, `sameSite=strict` y limitar el `Domain`.
+- Agregar rate limiting al login y rotación de tokens.
+
+## Ejecución en desarrollo
+
+- Backend (Nest, puerto `3001`):
+
+```bash
+cd apps/api
+yarn install
+$env:PORT=3001; yarn start:dev
+```
+
+- Frontend (Next, puerto `3000`):
+
+```bash
+cd apps/web
+yarn install
+yarn dev
+```
+
+Flujo de acceso admin:
+- Abre `http://localhost:3000/admin` → si no hay sesión, redirige a `/admin/login`.
+- Login con `ADMIN_UI_USER`/`ADMIN_UI_PASS` → se setea la cookie `admin_session`.
+- Crear/editar posts/tags → el proxy interno inyecta `x-admin-token` y el backend lo valida con `AdminGuard`.
+
+## Notas
+- Arquitectura MVC desacoplada, SSR/SSG en Next.js, Nest.js en funciones serverless.
+- Prisma con Postgres (Vercel Postgres); Redis en Docker para local.
+- Mantener contratos de API y migraciones alineados (Swagger/OpenAPI y `schema.prisma`).
+
+## Despliegue en Vercel
+
+Monorepo con dos proyectos: `Web (Next.js)` y `API (Nest.js)`.
+
+- Organización de proyectos:
+  - Web
+    - Root Directory: `apps/web`
+    - Framework Preset: `Next.js`
+    - Install Command: `yarn install`
+    - Build Command: `yarn build`
+    - Env (Production/Preview):
+      - `API_BASE_URL=https://api.satelite.ar`
+      - `ADMIN_UI_USER`
+      - `ADMIN_UI_PASS`
+      - `ADMIN_UI_SESSION_TOKEN`
+      - `ADMIN_API_TOKEN` (debe coincidir con API)
+  - API
+    - Root Directory: `apps/api`
+    - Framework Preset: `Node.js` (Serverless Functions)
+    - Install Command: `yarn install`
+    - Build Command: `yarn build`
+    - Env (Production/Preview):
+      - `ADMIN_API_TOKEN`
+      - `DATABASE_URL` (Vercel Postgres)
+      - `NASA_API_KEY`
+    - Migraciones (opcional recomendado): agregar script de build o postdeploy que ejecute `yarn prisma migrate deploy`.
+
+- Dominios y rutas:
+  - Web: `satelite.ar`
+  - API: `api.satelite.ar`
+  - Configurar `API_BASE_URL` del Web apuntando al dominio del API.
+
+- Pasos recomendados:
+  - Crear/Linkear el repositorio en Vercel.
+  - Crear dos proyectos dentro del mismo equipo: uno para `apps/web` y otro para `apps/api` (Root Directory en cada caso).
+  - Cargar variables de entorno en Vercel para `Development`, `Preview` y `Production`.
+  - Verificar logs de build y de funciones tras el primer deploy.
+
+- Seguridad en producción:
+  - Cookies admin: `httpOnly`, `secure`, `sameSite=strict`, `Domain=satelite.ar`.
+  - No exponer secretos como `NEXT_PUBLIC_*`.
+  - Rotación de `ADMIN_API_TOKEN` y `ADMIN_UI_SESSION_TOKEN`.
+  - Rate limiting en login y en endpoints de mutación.
+
+- Validación post-deploy:
+  - Web: visitar `/admin` y validar login/redirecciones.
+  - API: probar `GET /tags`, `POST /posts` vía proxy del Web.
+  - Revisar que los Tags se carguen en `/admin/posts/new`.
+
+Referencias:
+- Next.js en Vercel: https://vercel.com/docs/frameworks/nextjs
+- Monorepos en Vercel: https://vercel.com/docs/monorepos
+- Funciones Serverless (Node): https://vercel.com/docs/functions/serverless-functions
+- Prisma Deploy Migrations: https://www.prisma.io/docs/orm/prisma-migrate/deploying-migrations
