@@ -15,9 +15,11 @@ type PageProps = {
 };
 
 export default async function PostsPage({ searchParams }: PageProps) {
-  const status = searchParams?.status;
-  const tagIds = searchParams?.tagIds?.split(",").filter(Boolean);
-  const search = searchParams?.search;
+  const status = typeof searchParams?.status === "string" ? searchParams!.status : undefined;
+  const tagIds = typeof searchParams?.tagIds === "string"
+    ? searchParams!.tagIds.split(",").map((s) => s.trim()).filter(Boolean)
+    : undefined;
+  const search = typeof searchParams?.search === "string" ? searchParams!.search : undefined;
 
   // Consultas al backend; en caso de error se devuelven arrays vacíos
   const [posts, tags] = await Promise.all([

@@ -5,19 +5,39 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { SectorCard } from "@/components/shared/sector-card";
 import { ReportCard } from "@/components/shared/report-card";
+import { getPosts } from "@/lib/api";
 
-export default function Home() {
+// Server Component: puede hacer fetch al backend directamente (SSR)
+export default async function Home() {
   const sectors = [
     { slug: "agricultura", title: "Agricultura y Ganadería", description: "Optimice cosechas, monitoree sequías y gestione recursos." },
     { slug: "energia", title: "Energía", description: "Monitoreo de infraestructura y riesgos ambientales." },
     { slug: "logistica", title: "Logística", description: "Rutas, puertos y cadenas de suministro optimizadas." },
   ];
+  // Obtiene últimos análisis desde el backend (Nest.js + Prisma)
+  // Buenas prácticas: limitar resultados y ordenar por fecha del evento
+  let latestPosts: Awaited<ReturnType<typeof getPosts>> = [];
+  try {
+    const posts = await getPosts({ status: "published" });
+    latestPosts = posts
+      .slice() // copia defensiva
+      .sort((a, b) => new Date(b.eventDate).getTime() - new Date(a.eventDate).getTime())
+      .slice(0, 6); // máximo 6 tarjetas
+  } catch (e) {
+    // Fallback silencioso en caso de error del backend; mostramos mensaje en la UI
+    latestPosts = [];
+  }
 
-  const featuredReports = [
-    { slug: "sequias-pampa-2025", title: "Impacto de la Sequía en la Pampa Húmeda: Análisis de Julio 2025", sector: "Agricultura", publishedAt: "10 Nov 2025" },
-    { slug: "incendios-patagonia-2025", title: "Incendios en Patagonia: evaluación de impacto y respuesta", sector: "Ambiente", publishedAt: "08 Nov 2025" },
-    { slug: "hidricos-cuyo-2025", title: "Gestión de recursos hídricos en Cuyo: tendencias 2025", sector: "Energía", publishedAt: "01 Nov 2025" },
-  ];
+  // Helper para crear un resumen breve desde el contenido
+  // Buenas prácticas: evitar cortar palabras, limitar a ~160 caracteres
+  const makeSummary = (text?: string) => {
+    if (!text) return undefined;
+    const max = 160;
+    if (text.length <= max) return text;
+    const cut = text.slice(0, max);
+    const lastSpace = cut.lastIndexOf(" ");
+    return `${cut.slice(0, lastSpace > 0 ? lastSpace : max)}…`;
+  };
 
   return (
     <div className="container mx-auto max-w-6xl px-6 py-10">
@@ -43,21 +63,29 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Featured Reports */}
+      {/* Featured Reports (Últimos análisis desde API) */}
       <section className="mb-12">
         <h2 className="text-2xl font-semibold mb-6">Nuestros Últimos Análisis</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {featuredReports.map((r) => (
-            <ReportCard
-              key={r.slug}
-              title={r.title}
-              summary={undefined}
-              sector={r.sector}
-              slug={r.slug}
-              tags={["Destacado"]}
-            />
-          ))}
-        </div>
+        {latestPosts.length === 0 ? (
+          // Mensaje amigable si no hay datos o el backend falló
+          <p className="text-sm text-muted-foreground">No hay análisis disponibles por el momento. Intente más tarde.</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {latestPosts.map((p) => (
+              <ReportCard
+                key={p.slug}
+                title={p.title}
+                // Resumen truncado derivado de content (opcional)
+                summary={makeSummary(p.content)}
+                // Usamos el primer tag como sector visible
+                sector={p.tags?.[0]?.name}
+                slug={p.slug}
+                // Mostramos nombres de tags; se devuelven desde el backend
+                tags={(p.tags ?? []).map((t) => t.name)}
+              />
+            ))}
+          </div>
+        )}
       </section>
 
       {/* Final CTA */}

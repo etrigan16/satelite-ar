@@ -1,3 +1,4 @@
+"use client";
 // Badge estilo shadcn (simplificado)
 // Útil para etiquetas de tags y estados
 

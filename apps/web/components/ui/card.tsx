@@ -1,3 +1,4 @@
+"use client";
 // Card estilo shadcn (simplificado)
 // Contenedor con borde y padding para agrupar contenido
 
