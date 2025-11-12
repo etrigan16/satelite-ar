@@ -7,7 +7,22 @@ import { PrismaClient } from "@prisma/client";
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
   async onModuleInit() {
     // Establece conexión con la base de datos al iniciar el módulo
-    await this.$connect();
+    // Mejora: en desarrollo, no bloquear el arranque si la DB no está disponible.
+    // Esto permite usar endpoints que no dependen de Prisma (p.ej. NASA/APOD).
+    try {
+      await this.$connect();
+    } catch (err: any) {
+      // En producción, se debe fallar rápido para no ocultar problemas.
+      const isDev = process.env.NODE_ENV !== "production";
+      if (isDev) {
+        console.warn(
+          "[PrismaService] $connect() falló. Continuando sin DB en desarrollo:",
+          err?.message || err,
+        );
+      } else {
+        throw err;
+      }
+    }
   }
 
   async onModuleDestroy() {

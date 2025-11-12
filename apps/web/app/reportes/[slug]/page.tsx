@@ -42,7 +42,7 @@ export default async function ReportDetailPage({ params }: PageProps) {
         <div className="flex flex-wrap items-center gap-2 text-sm">
           <span className="text-muted-foreground">{formattedDate}</span>
           {(post.tags ?? []).map((t) => (
-            <Badge key={t.id} variant="outline">
+            <Badge key={t.id} variant="secondary">
               {t.name}
             </Badge>
           ))}

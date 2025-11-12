@@ -36,6 +36,9 @@ async function bootstrap() {
       console.warn('Swagger no habilitado: instala @nestjs/swagger para activar documentación');
     }
   }
-  await app.listen(process.env.PORT ?? 3000);
+  const port = Number(process.env.PORT ?? 3001);
+  const host = process.env.HOST ?? '127.0.0.1';
+  await app.listen(port, host);
+  console.log(`[API] Listening on http://${host}:${port}`);
 }
 bootstrap();

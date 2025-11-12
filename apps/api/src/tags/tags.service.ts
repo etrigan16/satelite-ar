@@ -18,7 +18,23 @@ export class TagsService {
   }
 
   async list() {
-    return this.prisma.tag.findMany({ orderBy: { name: "asc" } });
+    try {
+      return await this.prisma.tag.findMany({ orderBy: { name: "asc" } });
+    } catch (err) {
+      // Fallback de desarrollo: si la DB no está disponible, devolvemos una lista estática
+      // para permitir que el frontend siga funcionando y validando integraciones.
+      // En producción mantenemos fail-fast.
+      if (process.env.NODE_ENV !== "production") {
+        return [
+          { id: "dev-agriculture", name: "Agricultura", slug: "agriculture" },
+          { id: "dev-environment", name: "Ambiente", slug: "environment" },
+          { id: "dev-defense", name: "Defensa", slug: "defense" },
+          { id: "dev-climate", name: "Clima", slug: "climate" },
+          { id: "dev-disaster-response", name: "Respuesta a Desastres", slug: "disaster-response" },
+        ] as any;
+      }
+      throw err;
+    }
   }
 
   async findById(id: string) {
