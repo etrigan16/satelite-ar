@@ -119,9 +119,11 @@ export default function PostFormClient({
       setApodPreviewUrl(apodData.hdurl || apodData.url);
       // Mensaje de confirmación
       setMessage('Datos de APOD cargados.');
-    } catch (error: any) {
+    } catch (error: unknown) {
+      // Tipado estricto del error para cumplir el linter y evitar any
       console.error('NASA APOD error:', error);
-      setMessage(`Error de NASA: ${error?.message || 'Error inesperado'}`);
+      const message = error instanceof Error ? error.message : 'Error inesperado';
+      setMessage(`Error de NASA: ${message}`);
     } finally {
       setIsFetchingApod(false);
     }
@@ -182,7 +184,8 @@ export default function PostFormClient({
             </a>
           )
         ) : (
-          <p className="text-sm text-gray-500">Sin imagen cargada. Usá "Traer APOD" para previsualizar.</p>
+          // Evitamos comillas sin escapar en JSX para cumplir el linter
+          <p className="text-sm text-gray-500">Sin imagen cargada. Usá &quot;Traer APOD&quot; para previsualizar.</p>
         )}
       </div>
       <div>

@@ -89,8 +89,9 @@ export async function fetchNasaApodPublic(date?: string): Promise<ApodResponse> 
   const qs = date ? `?date=${encodeURIComponent(date)}` : '';
   const res = await fetch(`/api/nasa/apod${qs}`);
   if (!res.ok) {
-    const errorData = await res.json().catch(() => ({ message: res.statusText } as any));
-    throw new Error(errorData.message || 'Error al obtener datos de NASA');
+    // Evitamos usar any; tipamos el objeto de error opcionalmente
+    const errorData = await res.json().catch(() => ({ message: res.statusText } as { message?: string }));
+    throw new Error(errorData?.message || 'Error al obtener datos de NASA');
   }
   return res.json();
 }
