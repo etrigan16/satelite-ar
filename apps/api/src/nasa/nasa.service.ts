@@ -1,77 +1,82 @@
-// Service Nasa: encapsula integración con la API NASA APOD.
-// Implementa getApod(date?) leyendo NASA_API_KEY desde variables de entorno.
-// Seguridad: nunca exponer la clave al cliente; todas las llamadas deben pasar por este Service.
-import { Injectable } from '@nestjs/common';
+// Servicio Nasa: cerebro del proxy hacia la API de NASA (APOD)
+// Implementa integración segura, lectura de configuración y formateo de respuesta.
 import { HttpService } from '@nestjs/axios';
+import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
 
-type ApodRaw = {
-  copyright?: string;
+// DTO: contrato de datos simplificado que devolvemos al frontend
+export interface ApodResponse {
+  title: string;
+  explanation: string;
   date: string; // YYYY-MM-DD
-  explanation: string;
-  hdurl?: string;
-  media_type: 'image' | 'video';
-  service_version?: string;
-  title: string;
+  hdurl: string | null;
   url: string;
-  thumbnail_url?: string; // algunos videos incluyen thumbnail
-};
-
-export type ApodDto = {
-  title: string;
-  explanation: string;
-  date: string;
-  mediaType: 'image' | 'video';
-  url: string;
-  hdUrl?: string;
-  thumbnailUrl?: string;
-  copyright?: string;
-};
+}
 
 @Injectable()
 export class NasaService {
-  constructor(private readonly http: HttpService) {}
+  private readonly logger = new Logger(NasaService.name);
+  private readonly apiKey: string;
+  private readonly apodBaseUrl: string;
+
+  constructor(
+    private readonly httpService: HttpService,
+    private readonly configService: ConfigService, // Inyectado gracias al ConfigModule global
+  ) {
+    // Obtenemos la API Key de forma segura desde las variables de entorno
+    this.apiKey = this.configService.get<string>('NASA_API_KEY') as string;
+    if (!this.apiKey) {
+      this.logger.error('NASA_API_KEY no está configurada en .env');
+      throw new Error('NASA_API_KEY no está configurada');
+    }
+    // Base URL oficial de APOD
+    this.apodBaseUrl = 'https://api.nasa.gov/planetary/apod';
+  }
 
   /**
-   * getApod: obtiene Astronomy Picture of the Day.
-   * - Si `NASA_API_KEY` contiene una URL completa, la usa directamente.
-   * - Si `NASA_API_KEY` contiene sólo la clave, compone la URL oficial.
-   * - Admite query `date=YYYY-MM-DD` para obtener días anteriores.
+   * Obtiene la "Foto Astronómica del Día" (APOD).
+   * Seguridad: la clave nunca se expone al cliente, solo el backend llama a NASA.
    */
-  async getApod(date?: string): Promise<ApodDto> {
-    const envVal = process.env.NASA_API_KEY;
-    if (!envVal) {
-      throw new Error('NASA_API_KEY no configurada');
-    }
-    // Componer URL de APOD según formato de env
-    const baseUrl = envVal.includes('http')
-      ? envVal // soporta formato completo con api_key ya incluido
-      : `https://api.nasa.gov/planetary/apod?api_key=${encodeURIComponent(envVal)}`;
+  /**
+   * Permite opcionalmente solicitar APOD para una fecha específica (YYYY-MM-DD).
+   * Si no se provee fecha, usa el día actual.
+   */
+  async getApod(date?: string): Promise<ApodResponse> {
+    this.logger.log('Contactando API de NASA APOD...');
+    try {
+      // Construimos URL con parámetros seguros
+      const url = new URL(this.apodBaseUrl);
+      url.searchParams.set('api_key', this.apiKey);
+      if (date) {
+        url.searchParams.set('date', date);
+      }
+      // Convertimos Observable en Promesa
+      const { data } = await firstValueFrom(this.httpService.get(url.toString()));
 
-    const url = date ? `${baseUrl}&date=${encodeURIComponent(date)}` : baseUrl;
-    const obs = this.http.get<ApodRaw>(url, {
-      // Cabeceras estándar; API pública no requiere auth adicional
-      headers: { 'Accept': 'application/json' },
-      // No enviar cookies
-      withCredentials: false,
-      // Validación TLS por defecto
-    });
-    const res = await firstValueFrom(obs);
-    if (res.status !== 200 || !res.data) {
-      throw new Error(`NASA APOD error: ${res.status}`);
+      // Formateo: devolvemos solo campos necesarios por el frontend
+      return {
+        title: data.title,
+        explanation: data.explanation,
+        date: data.date,
+        hdurl: data.hdurl || null, // asegurar null si no existe
+        url: data.url,
+      };
+    } catch (error: any) {
+      // Manejo robusto: log y excepción controlada
+      const status = error?.response?.status;
+      const payload = error?.response?.data;
+      this.logger.error('Error al contactar la API de NASA', payload);
+      // En desarrollo, proveemos más contexto para diagnóstico
+      const isDev = process.env.NODE_ENV !== 'production';
+      if (isDev) {
+        throw new InternalServerErrorException({
+          message: 'Error al obtener datos de la API de NASA',
+          statusCode: status ?? 500,
+          nasa: payload ?? null,
+        } as any);
+      }
+      throw new InternalServerErrorException('Error al obtener datos de la API de NASA');
     }
-    const data = res.data;
-    // Sanitizar/simplificar payload para el cliente
-    const dto: ApodDto = {
-      title: data.title,
-      explanation: data.explanation,
-      date: data.date,
-      mediaType: data.media_type,
-      url: data.url,
-      hdUrl: data.hdurl,
-      thumbnailUrl: data.thumbnail_url,
-      copyright: data.copyright,
-    };
-    return dto;
   }
 }
