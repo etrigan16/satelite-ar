@@ -1,33 +1,23 @@
-// Controller Nasa: expone endpoints bajo /nasa
-// Añadimos /nasa/apod protegido con AdminGuard y soporte de query date.
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
-import { NasaService } from './nasa.service';
+// Controlador Nasa: expone el endpoint seguro /nasa/apod
+import { Controller, Get, UseGuards, Logger, Query } from '@nestjs/common';
+import { NasaService, ApodResponse } from './nasa.service';
 import { AdminGuard } from '../common/guards/admin.guard';
 
-@Controller('nasa')
+@Controller('nasa') // Ruta base: /nasa
 export class NasaController {
+  private readonly logger = new Logger(NasaController.name);
+
   constructor(private readonly nasaService: NasaService) {}
 
-  // Endpoint simple para validar módulo (no protegido)
-  @Get('health')
-  health() {
-    return { ok: true };
-  }
-
   /**
-   * GET /nasa/apod
-   * - Obtiene Astronomy Picture of the Day desde la API de NASA
-   * - Protegido por AdminGuard (requiere header 'x-admin-token')
-   * - Parámetros: `date` (YYYY-MM-DD) opcional
-   * Seguridad: la clave NASA nunca se expone; el backend realiza la llamada.
+   * Endpoint para obtener la Foto Astronómica del Día (APOD).
+   * Protegido solo para administradores (evita abuso de cuota NASA).
    */
-  @UseGuards(AdminGuard)
-  @Get('apod')
-  async apod(@Query('date') date?: string) {
-    // Validación básica del formato de fecha (opcional)
-    if (date && !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-      return { error: 'Formato de fecha inválido. Use YYYY-MM-DD' };
-    }
+  @Get('apod') // Ruta completa: GET /nasa/apod
+  @UseGuards(AdminGuard) // Seguridad CRÍTICA
+  async getApod(@Query('date') date?: string): Promise<ApodResponse> {
+    // Documentación: permite ?date=YYYY-MM-DD para obtener APOD de una fecha específica
+    this.logger.log(`Recibida solicitud para /nasa/apod${date ? ` con date=${date}` : ''}`);
     return this.nasaService.getApod(date);
   }
 }
