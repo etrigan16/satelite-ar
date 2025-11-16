@@ -48,7 +48,12 @@ export async function getTagBySlug(slug: string) {
 
 // Conveniencia: obtener un Post por slug cuando el backend no tiene endpoint dedicado.
 export async function getPostBySlug(slug: string) {
-  const posts = await getPosts({ search: slug });
+  // Nota importante: buscar por slug usando "search" fallaba cuando el slug
+  // tenía guiones y el título contenido espacios (no coincidía con el contains).
+  // Solución segura: listar posts sin filtro y encontrar el slug en memoria.
+  // Para datasets grandes, convendría exponer un endpoint dedicado en el backend
+  // (ej: GET /posts/slug/:slug). Por ahora mantenemos el contrato sin cambios.
+  const posts = await getPosts();
   return posts.find((p) => p.slug === slug);
 }
 

@@ -7,6 +7,7 @@ import { useState } from 'react';
 // Comentario: usamos el proxy interno /admin/api/nasa/apod, que inyecta token server-side.
 import { fetchNasaApod, type ApodResponse } from '../../lib/api';
 import { Button } from '@/components/ui/button';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 // Corregimos origen de tipos: se importan desde lib/types (no desde lib/api)
 import type { Tag, Post } from '../../lib/types';
@@ -62,9 +63,8 @@ export default function PostFormClient({
     setLoading(true);
     try {
       const isoDate = new Date(eventDate).toISOString();
-      // Convertimos el status a mayúsculas para alinear con el backend (DRAFT/PUBLISHED)
-      const backendStatus = status.toUpperCase();
-      const payload = { title, status: backendStatus, eventDate: isoDate, content, tagIds: selectedTagIds };
+      // El backend espera 'draft' | 'published' (minúsculas) según contrato
+      const payload = { title, status, eventDate: isoDate, content, tagIds: selectedTagIds };
       const url = mode === 'edit' && postId ? `/admin/api/posts/${postId}` : '/admin/api/posts';
       const method = mode === 'edit' && postId ? 'PATCH' : 'POST';
       const res = await fetch(url, {
@@ -94,7 +94,7 @@ export default function PostFormClient({
       } else {
         setMessage(data?.message || data?.error || `Error: ${res.status}`);
       }
-    } catch (err) {
+    } catch {
       setMessage(mode === 'edit' ? 'Error de red al actualizar el post.' : 'Error de red al crear el post.');
     } finally {
       setLoading(false);
@@ -149,7 +149,11 @@ export default function PostFormClient({
       </div>
       <div>
         <label className="block text-sm font-medium">Estado</label>
-        <select className="w-full border rounded px-3 py-2" value={status} onChange={(e) => setStatus(e.target.value as any)}>
+        <select
+          className="w-full border rounded px-3 py-2"
+          value={status}
+          onChange={(e) => setStatus(e.target.value as 'draft' | 'published')}
+        >
           <option value="draft">Borrador</option>
           <option value="published">Publicado</option>
         </select>
@@ -167,11 +171,13 @@ export default function PostFormClient({
         <label className="block text-sm font-medium">Imagen APOD</label>
         {apodPreviewUrl ? (
           looksLikeImage(apodPreviewUrl) ? (
-            <img
+            <Image
               src={apodPreviewUrl}
               alt="APOD preview"
-              className="mt-2 max-h-64 rounded border"
-              loading="lazy"
+              width={1024}
+              height={768}
+              className="mt-2 max-h-64 rounded border w-auto h-auto"
+              unoptimized
             />
           ) : (
             <a

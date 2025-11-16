@@ -8,7 +8,7 @@ export default async function NewPostPage() {
   let tags: Awaited<ReturnType<typeof getTags>> = [];
   try {
     tags = await getTags();
-  } catch (err) {
+  } catch {
     // En producción deberíamos observar logs; aquí mostramos un mensaje en la UI.
     tags = [];
   }

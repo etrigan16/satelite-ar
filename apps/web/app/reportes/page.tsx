@@ -12,7 +12,7 @@ export default async function ReportesPage() {
   let posts = [] as Awaited<ReturnType<typeof getPosts>>;
   try {
     posts = await getPosts({ status: "published" });
-  } catch (err) {
+  } catch {
     // Fallback seguro si el backend no está disponible
     posts = [];
   }

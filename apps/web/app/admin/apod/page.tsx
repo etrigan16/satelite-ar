@@ -1,6 +1,8 @@
 "use client";
 import { useState } from "react";
+import Image from "next/image";
 import { fetchNasaApod } from "@/lib/api";
+import type { ApodResponse } from "@/lib/api";
 
 /**
  * Página de ejemplo: /admin/apod
@@ -12,17 +14,21 @@ export default function AdminApodPage() {
   const [date, setDate] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [data, setData] = useState<any | null>(null);
+  const [data, setData] = useState<ApodResponse | null>(null);
+
+  // Heurística simple para distinguir imágenes por extensión
+  const looksLikeImage = (url: string) => /\.(png|jpe?g|gif|webp|bmp|svg)(\?.*)?$/i.test(url);
 
   async function loadApod() {
     setLoading(true);
     setError(null);
     setData(null);
     try {
-      const apod = await fetchNasaApod(date || undefined);
+      const apod = (await fetchNasaApod(date || undefined)) as ApodResponse;
       setData(apod);
-    } catch (err: any) {
-      setError(err?.message || "Error al cargar APOD");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Error al cargar APOD";
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -62,10 +68,17 @@ export default function AdminApodPage() {
           <h2 className="text-xl font-medium">{data.title}</h2>
           <p className="text-sm text-muted-foreground">{data.date}</p>
           <div className="mt-3">
-            {data.mediaType === "image" ? (
-              <img src={data.hdUrl || data.url} alt={data.title} className="max-w-full rounded" />
+            {looksLikeImage(data.hdurl || data.url) ? (
+              <Image
+                src={data.hdurl || data.url}
+                alt={data.title}
+                width={1024}
+                height={768}
+                className="w-full h-auto rounded"
+                unoptimized
+              />
             ) : (
-              // Si es video (ej. YouTube/Vimeo), embebemos el iframe
+              // Si no parece imagen, intentamos embeber como video/iframe
               <iframe
                 src={data.url}
                 className="w-full aspect-video rounded"

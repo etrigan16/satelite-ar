@@ -26,7 +26,7 @@ export default function LoginForm({ next }: { next: string }) {
           const safeNext = next.startsWith('/admin/login') ? '/admin' : next;
           router.replace(safeNext);
         }
-      } catch (_) {
+      } catch {
         // silencioso: si falla, se muestra el formulario normalmente
       }
     };
@@ -45,12 +45,15 @@ export default function LoginForm({ next }: { next: string }) {
         body: JSON.stringify({ username, password }),
       });
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data?.error ?? 'Error de login');
+        let payload: unknown = {};
+        try { payload = await res.json(); } catch { payload = {}; }
+        const data = payload as { error?: string };
+        throw new Error(data.error ?? 'Error de login');
       }
       router.push(next);
-    } catch (err: any) {
-      setError(err.message || 'Error inesperado');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error inesperado';
+      setError(msg);
     } finally {
       setLoading(false);
     }

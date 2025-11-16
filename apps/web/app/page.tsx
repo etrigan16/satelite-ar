@@ -23,7 +23,7 @@ export default async function Home() {
       .slice() // copia defensiva
       .sort((a, b) => new Date(b.eventDate).getTime() - new Date(a.eventDate).getTime())
       .slice(0, 6); // máximo 6 tarjetas
-  } catch (e) {
+  } catch {
     // Fallback silencioso en caso de error del backend; mostramos mensaje en la UI
     latestPosts = [];
   }

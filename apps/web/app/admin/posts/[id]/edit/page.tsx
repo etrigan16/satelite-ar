@@ -12,7 +12,7 @@ export default async function EditPostPage({ params }: PageProps) {
   let post = null as Awaited<ReturnType<typeof getPostById>> | null;
   try {
     post = await getPostById(id);
-  } catch (_) {
+  } catch {
     notFound();
   }
   if (!post) {

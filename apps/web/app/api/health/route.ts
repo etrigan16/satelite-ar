@@ -30,10 +30,16 @@ export async function GET() {
     if (!res.ok) {
       return NextResponse.json({ ok: false, source: 'api', error: `HTTP ${res.status}` }, { status: 200 });
     }
-    const data = await res.json().catch(() => ({} as any));
-    const ok = Boolean(data?.api?.ok && data?.db?.ok);
-    return NextResponse.json({ ok, source: 'api', db: data?.db }, { status: 200 });
-  } catch (err: any) {
+    let dataUnknown: unknown = {};
+    try {
+      dataUnknown = await res.json();
+    } catch {
+      dataUnknown = {};
+    }
+    const data = dataUnknown as { api?: { ok?: boolean }; db?: { ok?: boolean; error?: string } };
+    const ok = Boolean(data.api?.ok && data.db?.ok);
+    return NextResponse.json({ ok, source: 'api', db: data.db }, { status: 200 });
+  } catch {
     // Fallback: si /health falla, intentamos /nasa/health para distinguir API caído total
     try {
       // Intentamos primero host normalizado, luego localhost si el primero falla
@@ -42,9 +48,13 @@ export async function GET() {
       for (const base of tryHosts) {
         try {
           const res2 = await fetch(`${base}/nasa/health`, { method: 'GET', cache: 'no-store' });
-          ok2 = res2.ok ? (await res2.json().catch(() => ({}))).ok === true : false;
+          let payload: unknown = {};
+          if (res2.ok) {
+            try { payload = await res2.json(); } catch { payload = {}; }
+          }
+          ok2 = (payload as { ok?: boolean }).ok === true;
           if (ok2) break;
-        } catch (_) {
+        } catch {
           // continúa con siguiente host
         }
       }
