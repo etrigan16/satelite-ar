@@ -1,5 +1,5 @@
-import { Injectable } from "@nestjs/common";
-import { PrismaService } from "../prisma/prisma.service";
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
 
 // Service de salud del sistema
 // Verifica la disponibilidad de la base de datos mediante una consulta simple.
@@ -10,10 +10,12 @@ export class HealthService {
   async checkDb() {
     try {
       // Consulta mínima para validar conectividad
-      await this.prisma.$queryRawUnsafe("SELECT 1");
+      await this.prisma.$queryRawUnsafe('SELECT 1');
       return { ok: true };
-    } catch (err: any) {
-      return { ok: false, error: err?.message || "db check failed" };
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error ? err.message : 'db check failed';
+      return { ok: false, error: errorMessage };
     }
   }
 

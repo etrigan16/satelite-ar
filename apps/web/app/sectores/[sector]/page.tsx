@@ -10,12 +10,12 @@ export default async function SectorPage({ params }: Params) {
   let posts = [] as Awaited<ReturnType<typeof getPosts>>;
   try {
     tag = await getTagBySlug(sector);
-  } catch (err) {
+  } catch {
     tag = null;
   }
   try {
     posts = tag ? await getPosts({ status: "published", tagIds: [tag.id] }) : [];
-  } catch (err) {
+  } catch {
     posts = [];
   }
   return (

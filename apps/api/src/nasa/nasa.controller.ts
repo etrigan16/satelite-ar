@@ -17,7 +17,9 @@ export class NasaController {
   @UseGuards(AdminGuard) // Seguridad CRÍTICA
   async getApod(@Query('date') date?: string): Promise<ApodResponse> {
     // Documentación: permite ?date=YYYY-MM-DD para obtener APOD de una fecha específica
-    this.logger.log(`Recibida solicitud para /nasa/apod${date ? ` con date=${date}` : ''}`);
+    this.logger.log(
+      `Recibida solicitud para /nasa/apod${date ? ` con date=${date}` : ''}`,
+    );
     return this.nasaService.getApod(date);
   }
 }

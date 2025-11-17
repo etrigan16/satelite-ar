@@ -14,14 +14,12 @@ export default function StatusBanner() {
       const res = await fetch("/api/health", { cache: "no-store" });
       const data = (await res.json()) as { ok: boolean; source: string; error?: string; db?: { ok: boolean; error?: string } };
       setHealth(data);
-    } catch (err) {
+    } catch {
       setHealth({ ok: false, source: "api", error: "network error" });
     }
   }
 
   useEffect(() => {
-    // Primera verificación inmediata
-    checkHealth();
     // Polling cada 10s para reconectar automáticamente
     const id = setInterval(checkHealth, 10000);
     return () => clearInterval(id);

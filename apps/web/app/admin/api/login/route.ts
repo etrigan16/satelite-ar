@@ -22,7 +22,7 @@ export async function POST(req: Request) {
       maxAge: 60 * 60, // 1 hora
     });
     return res;
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: 'Formato inválido' }, { status: 400 });
   }
 }

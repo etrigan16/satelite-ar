@@ -14,7 +14,7 @@ import { ConfigModule } from '@nestjs/config'; // Acceso a variables de entorno
       maxRedirects: 5,
       headers: {
         // No exponer secretos en headers; sólo identificación básica del cliente
-        'User-Agent': 'satelite.ar-api/1.0 (NestJS HttpModule)'
+        'User-Agent': 'satelite.ar-api/1.0 (NestJS HttpModule)',
       },
     }),
     ConfigModule, // Permite inyectar ConfigService

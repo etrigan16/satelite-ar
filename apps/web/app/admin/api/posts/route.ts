@@ -12,9 +12,11 @@ export async function POST(req: Request) {
       headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
       body: JSON.stringify(payload),
     });
-    const data = await res.json().catch(() => ({}));
+    let dataUnknown: unknown = {};
+    try { dataUnknown = await res.json(); } catch { dataUnknown = {}; }
+    const data = dataUnknown as Record<string, unknown>;
     return NextResponse.json(data, { status: res.status });
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: 'Payload inválido' }, { status: 400 });
   }
 }

@@ -48,7 +48,12 @@ export async function getTagBySlug(slug: string) {
 
 // Conveniencia: obtener un Post por slug cuando el backend no tiene endpoint dedicado.
 export async function getPostBySlug(slug: string) {
-  const posts = await getPosts({ search: slug });
+  // Nota importante: buscar por slug usando "search" fallaba cuando el slug
+  // tenía guiones y el título contenido espacios (no coincidía con el contains).
+  // Solución segura: listar posts sin filtro y encontrar el slug en memoria.
+  // Para datasets grandes, convendría exponer un endpoint dedicado en el backend
+  // (ej: GET /posts/slug/:slug). Por ahora mantenemos el contrato sin cambios.
+  const posts = await getPosts();
   return posts.find((p) => p.slug === slug);
 }
 
@@ -64,6 +69,34 @@ export async function fetchNasaApod(date?: string) {
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
     throw new Error(data?.error || `APOD fetch failed: ${res.statusText}`);
+  }
+  return res.json();
+}
+
+// --- NASA APOD (público mediante rewrite) ---
+// Comentario: Esta función simula una llamada del lado del cliente a /api/nasa/apod
+// aprovechando el rewrite de Next.js. NO inyecta token admin, por lo que es
+// esperado recibir 401 cuando el backend exige AdminGuard. Útil para validar
+// el funcionamiento de los rewrites y del guard.
+export interface ApodResponse {
+  title: string;
+  explanation: string;
+  date: string; // YYYY-MM-DD
+  hdurl: string | null;
+  url: string;
+}
+
+/**
+ * Llama a nuestro backend vía rewrite en /api/nasa/apod.
+ * Si el AdminGuard rechaza (401), se lanza un error con el mensaje.
+ */
+export async function fetchNasaApodPublic(date?: string): Promise<ApodResponse> {
+  const qs = date ? `?date=${encodeURIComponent(date)}` : '';
+  const res = await fetch(`/api/nasa/apod${qs}`);
+  if (!res.ok) {
+    // Evitamos usar any; tipamos el objeto de error opcionalmente
+    const errorData = await res.json().catch(() => ({ message: res.statusText } as { message?: string }));
+    throw new Error(errorData?.message || 'Error al obtener datos de NASA');
   }
   return res.json();
 }

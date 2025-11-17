@@ -3,9 +3,20 @@
 // mockeando PrismaService y verificando transformación de datos (slug, status, fechas, tags).
 
 import { PostsService } from './posts.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 // Mock mínimo de PrismaService utilizado por PostsService
-const createMockPrisma = () => ({
+interface MockPrismaService {
+  post: {
+    findMany: jest.Mock;
+    findUnique: jest.Mock;
+    create: jest.Mock;
+    update: jest.Mock;
+    delete: jest.Mock;
+  };
+}
+
+const createMockPrisma = (): MockPrismaService => ({
   post: {
     findMany: jest.fn(),
     findUnique: jest.fn(),
@@ -17,11 +28,21 @@ const createMockPrisma = () => ({
 
 describe('PostsService', () => {
   let service: PostsService;
-  let prisma: ReturnType<typeof createMockPrisma>;
+  let prisma: MockPrismaService;
+
+  // Helper para obtener argumentos de llamadas mock de forma segura
+  const getMockCallArg = (
+    mockFn: jest.Mock,
+    callIndex = 0,
+    argIndex = 0,
+  ): any => {
+    const calls = mockFn.mock.calls as unknown[][];
+    return calls[callIndex][argIndex];
+  };
 
   beforeEach(() => {
     prisma = createMockPrisma();
-    service = new PostsService(prisma as any);
+    service = new PostsService(prisma as unknown as PrismaService);
   });
 
   it('create: genera slug y usa status por defecto DRAFT', async () => {
@@ -34,7 +55,9 @@ describe('PostsService', () => {
     await service.create(dto);
 
     expect(prisma.post.create).toHaveBeenCalled();
-    const arg = prisma.post.create.mock.calls[0][0];
+    const arg = getMockCallArg(prisma.post.create) as {
+      data: { slug: string; status: string; eventDate: Date };
+    };
     expect(arg.data.slug).toBe('hola-nandu-nasa-2024');
     expect(arg.data.status).toBe('DRAFT');
     expect(arg.data.eventDate instanceof Date).toBe(true);
@@ -51,7 +74,9 @@ describe('PostsService', () => {
     };
     await service.create(dto);
 
-    const arg = prisma.post.create.mock.calls[0][0];
+    const arg = getMockCallArg(prisma.post.create) as {
+      data: { status: string; tags: { connect: { id: string }[] } };
+    };
     expect(arg.data.status).toBe('PUBLISHED');
     expect(arg.data.tags.connect).toEqual([{ id: 't1' }, { id: 't2' }]);
   });
@@ -63,16 +88,32 @@ describe('PostsService', () => {
       tagIds: ['t3'],
     });
 
-    const arg = prisma.post.update.mock.calls[0][0];
+    const arg = getMockCallArg(prisma.post.update) as {
+      data: { slug: string; tags: { set: any[]; connect: { id: string }[] } };
+    };
     expect(arg.data.slug).toBe('nuevo-titulo-con-acentos-aei');
     expect(arg.data.tags).toEqual({ set: [], connect: [{ id: 't3' }] });
   });
 
   it('list: construye filtros correctos para status, tags y search', async () => {
     prisma.post.findMany.mockResolvedValue([]);
-    await service.list({ status: 'draft', tagIds: ['t1', 't2'], search: 'nasa' });
+    await service.list({
+      status: 'draft',
+      tagIds: ['t1', 't2'],
+      search: 'nasa',
+    });
 
-    const arg = prisma.post.findMany.mock.calls[0][0];
+    const arg = getMockCallArg(prisma.post.findMany) as {
+      where: {
+        status: string;
+        tags: { some: { id: { in: string[] } } };
+        OR: {
+          title: { contains: string; mode: string };
+          content: { contains: string; mode: string };
+        }[];
+      };
+      include: { tags: boolean };
+    };
     expect(arg.where.status).toBe('DRAFT');
     expect(arg.where.tags.some.id.in).toEqual(['t1', 't2']);
     expect(arg.where.OR).toEqual([
@@ -85,7 +126,10 @@ describe('PostsService', () => {
   it('findById: usa include {tags: true}', async () => {
     prisma.post.findUnique.mockResolvedValue({ id: 'p1' });
     await service.findById('p1');
-    const arg = prisma.post.findUnique.mock.calls[0][0];
+    const arg = getMockCallArg(prisma.post.findUnique) as {
+      where: { id: string };
+      include: { tags: boolean };
+    };
     expect(arg).toEqual({ where: { id: 'p1' }, include: { tags: true } });
   });
 

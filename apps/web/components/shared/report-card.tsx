@@ -32,7 +32,7 @@ export function ReportCard({ title, summary, sector, slug, tags = [] }: ReportCa
       <CardContent className="space-y-3">
         {/* Sector y etiquetas */}
         <div className="flex flex-wrap items-center gap-2">
-          {sector ? <Badge variant="outline">{sector}</Badge> : null}
+          {sector ? <Badge variant="secondary">{sector}</Badge> : null}
           {tags.map((t) => (
             <Badge key={t} variant="secondary">
               {t}
@@ -56,4 +56,3 @@ export function ReportCard({ title, summary, sector, slug, tags = [] }: ReportCa
   );
 }
 
-export default ReportCard;

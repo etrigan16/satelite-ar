@@ -1,6 +1,8 @@
 # satelite.ar — Portal de curación de datos satelitales (Argentina)
 
 > Portal de curación de contenido especializado en datos satelitales (integración NASA) y análisis públicos con foco en Argentina. Arquitectura desacoplada basada en MVC y microservicios.
+>
+> Trabajo Práctico Final de la materia **Técnicas Avanzadas de la Programación** de la **Universidad Metropolitana para la Educación y el Trabajo (UMET)**.
 
 <!--
 Este bloque inicial ofrece una visión general, requisitos, instalación y buenas prácticas.
@@ -15,6 +17,39 @@ Mantiene el README como punto de entrada educativo para desarrolladores junior/S
 - Modelo central: `Post` (estados: `draft`, `published`) con relación many-to-many a `Tag`.
 - API RESTful con CRUD para Posts y Tags, documentación con Swagger/OpenAPI.
 - Integraciones externas a través de un `NasaProxy` seguro.
+
+## Estructura del Monorepo
+- `apps/web`: Frontend (Next.js App Router).
+  - Rutas públicas: `apps/web/app/*`.
+  - Panel admin y proxies internos: `apps/web/app/admin/*`.
+  - Cliente de API y tipos: `apps/web/lib/api.ts`, `apps/web/lib/types.ts`.
+  - UI local estilo shadcn: `apps/web/components/ui/*`.
+- `apps/api`: Backend (Nest.js + Prisma).
+  - Controladores/servicios (MVC): `apps/api/src/**`.
+  - Módulos del dominio: `posts`, `tags`, `nasa`.
+  - Prisma y migraciones: `apps/api/prisma/*`.
+
+## Arquitectura MVC y CRUD
+- MVC (Nest.js):
+  - Controladores: `apps/api/src/posts/posts.controller.ts`, `apps/api/src/tags/tags.controller.ts`, `apps/api/src/nasa/nasa.controller.ts`.
+  - Servicios: `apps/api/src/posts/posts.service.ts`, `apps/api/src/tags/tags.service.ts`, `apps/api/src/nasa/nasa.service.ts`.
+  - Módulos: `apps/api/src/posts/posts.module.ts`, `apps/api/src/tags/tags.module.ts`, `apps/api/src/nasa/nasa.module.ts`.
+- CRUD:
+  - Posts: `GET/POST/PATCH/DELETE` implementados en `posts.controller.ts` y `posts.service.ts`.
+  - Tags: `GET/POST/PATCH/DELETE` en `tags.controller.ts` y `tags.service.ts`.
+  - DTOs y validaciones: `apps/api/src/posts/dto/*`, `apps/api/src/tags/dto/*`.
+
+## Integración NASA (NasaProxy)
+- Backend:
+  - Módulo `nasa`: `apps/api/src/nasa/*` con controlador y servicio que consumen las APIs públicas de NASA usando `NASA_API_KEY` desde entorno.
+  - Seguridad: `AdminGuard` (`apps/api/src/common/guards/admin.guard.ts`) valida `x-admin-token` para mutaciones/admin.
+- Frontend:
+  - Proxy interno admin: rutas `apps/web/app/admin/api/nasa/apod/route.ts` que inyectan `x-admin-token` desde servidor.
+  - Cliente: `apps/web/lib/api.ts` expone `fetchNasaApod()` (proxy admin) y `fetchNasaApodPublic()` (rewrite público).
+- Flujo y resultado:
+  - El frontend solicita APOD vía proxy admin → el backend `nasa.service.ts` consulta a NASA → se retornan datos curados (título, explicación, fecha, url/hdurl).
+  - Los datos pueden ser usados para enriquecer un `Post` y almacenados en la BD (Prisma) junto con `tags` para exposición pública controlada.
+  - Objetivo: aceptar peticiones de usuarios sobre datos "curados" (filtrados/validados) desde la sección pública.
 
 ## Requisitos previos
 - `Node.js >= 18`
@@ -56,10 +91,17 @@ NASA_API_KEY="<tu_clave_de_nasa_aqui>"
 - En local, puedes usar `.env` y herramientas como `dotenv`.
 
 ## Datos y API
-- `schema.prisma` define el contrato de datos: `Post` y `Tag` con relación many-to-many y estados `draft`/`published`.
-- CRUD REST para Posts/Tags (crear, listar, obtener, actualizar, borrar).
-- Documentación del backend con Swagger/OpenAPI.
-- Todas las integraciones externas (NASA API) pasan por el backend (`NasaProxy`).
+- Contrato de datos (`Prisma`): `apps/api/prisma/schema.prisma` con `Post`, `Tag` y relación many-to-many; estados `draft`/`published`.
+- CRUD REST:
+  - Endpoints en `apps/api/src/posts/*.ts` y `apps/api/src/tags/*.ts`.
+  - Filtros y búsqueda implementados en `posts.service.ts`.
+- Integraciones externas (NasaProxy):
+  - `apps/api/src/nasa/*` consume NASA y retorna datos curados.
+  - `apps/web/app/admin/api/nasa/*` actúa como proxy interno seguro.
+- Dónde buscar:
+  - Tipos y cliente frontend: `apps/web/lib/types.ts`, `apps/web/lib/api.ts`.
+  - UI y formularios admin: `apps/web/components/admin/*`, `apps/web/app/admin/*`.
+  - Guardas y seguridad: `apps/api/src/common/guards/admin.guard.ts`.
 
 <!--
 A medida que se definan los endpoints, añadir ejemplos de requests/responses y
@@ -84,13 +126,15 @@ yarn test
 - CORS y headers seguros en frontend/backend.
 - Logs controlados sin datos sensibles.
 
-## Próximos pasos sugeridos
-1. Crear `schema.prisma` con modelos `Post`, `Tag` y relación many-to-many.
-2. Generar migración inicial y bootstrap de Prisma.
-3. Inicializar backend Nest.js con CRUD y documentación Swagger.
-4. Montar frontend Next.js (App Router) con páginas de listado/detalle/edición.
-5. Configurar Docker (PostgreSQL/Redis) y Vercel CLI para entorno local.
-6. Añadir tests unitarios con Jest.
+## Próximos pasos
+1. Completar documentación Swagger/OpenAPI del CRUD y publicar ejemplos.
+2. Desplegar monorepo en Vercel (Web y API con dominios `satelite.ar` y `api.satelite.ar`).
+3. Conectar otras APIs de NASA:
+   - **EONET** (desastres naturales): ingesta y curación de eventos, exposición de endpoints públicos.
+   - **GIBS** (imágenes satelitales casi en tiempo real): integración para previsualización y almacenamiento de metadatos relevantes.
+   - **SMAP** (humedad de suelo): obtención periódica y agregación en BD para consultas históricas/regionales.
+4. Añadir autenticación (NextAuth.js) para el panel y mutaciones.
+5. Tests E2E (Playwright) sobre flujos admin y público.
 
 ## Referencias
 - Next.js (App Router): https://nextjs.org/docs/app
@@ -102,6 +146,19 @@ yarn test
 - Jest: https://jestjs.io/docs/getting-started
 - Swagger/OpenAPI: https://swagger.io/docs/
 - NASA APIs: https://api.nasa.gov/
+
+---
+
+## Nota para evaluación académica (UMET)
+- Este repositorio implementa un portal tipo blog/portal con curación de datos satelitales.
+- Arquitectura basada en **MVC desacoplado** y microservicios (Next.js + Nest.js).
+- Ubicación y búsqueda rápida:
+  - MVC backend: `apps/api/src/{posts,tags,nasa}/*`.
+  - CRUD: controladores/servicios y DTOs en los módulos anteriores.
+  - Integración NASA: `apps/api/src/nasa/*` y proxy admin en `apps/web/app/admin/api/nasa/*`.
+  - Datos y contratos: `apps/api/prisma/schema.prisma` y migraciones en `apps/api/prisma/migrations/*`.
+  - Frontend SSR/SSG y panel admin: `apps/web/app/*` y componentes en `apps/web/components/*`.
+
 
 <!--
 Mantén este README actualizado conforme avances: añadir endpoints, scripts y

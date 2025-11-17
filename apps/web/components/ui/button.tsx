@@ -31,10 +31,10 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
   // Si asChild está activo y el hijo es un elemento válido, se clona y se aplican estilos/props
   if (asChild && isValidElement(children)) {
     // Si el hijo es válido (ej. <Link/>), clonamos el elemento y solo aplicamos className.
-    // Nota: usamos type cast a any para evitar conflicto de tipos cuando P es desconocido.
-    const child = children as ReactElement<any>;
+    // Tipado seguro: evitamos any usando ReactElement<unknown> y props parciales
+    const child = children as ReactElement<unknown>;
     const childClass = (child.props as { className?: string }).className ?? "";
-    return cloneElement(child, { className: `${childClass} ${classes}`.trim() } as any);
+    return cloneElement(child, { className: `${childClass} ${classes}`.trim() } as Partial<{ className: string }>);
   }
 
   return (

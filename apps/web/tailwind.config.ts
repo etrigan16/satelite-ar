@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import animate from "tailwindcss-animate";
 
 // Tailwind v3 config con dark mode por clase y plugin animate
 // Compatible con shadcn/ui components
@@ -68,7 +69,7 @@ const config = {
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [animate],
 } satisfies Config;
 
 export default config;

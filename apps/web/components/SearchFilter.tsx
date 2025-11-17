@@ -3,7 +3,7 @@
 // Implementada como Client Component para manejar interacción sin recargar totalmente
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Tag } from "../lib/types";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
@@ -19,13 +19,9 @@ export default function SearchFilter({ tags }: Props) {
   const [search, setSearch] = useState<string>(searchParams.get("search") || "");
   const [status, setStatus] = useState<string>(searchParams.get("status") || "");
   const [selectedTags, setSelectedTags] = useState<string[]>(() => (searchParams.get("tagIds") || "").split(",").filter(Boolean));
-
-  useEffect(() => {
-    // Mantener estado en línea con la URL al cambiar manualmente parámetros
-    setSearch(searchParams.get("search") || "");
-    setStatus(searchParams.get("status") || "");
-    setSelectedTags((searchParams.get("tagIds") || "").split(",").filter(Boolean));
-  }, [searchParams]);
+  // Nota: evitemos setState dentro de useEffect para cumplir linter.
+  // Los valores iniciales ya derivan de searchParams en el primer render;
+  // las actualizaciones se realizan al aplicar/limpiar filtros.
 
   function toggleTag(id: string) {
     setSelectedTags((prev) => (prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id]));

@@ -12,7 +12,7 @@ export default async function PostDetailPage({ params }: PageProps) {
   let post = null as Awaited<ReturnType<typeof getPostById>> | null;
   try {
     post = await getPostById(params.id);
-  } catch (err) {
+  } catch {
     // Si el backend no responde o hay error, devolvemos 404
     notFound();
   }

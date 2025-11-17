@@ -17,9 +17,11 @@ export async function GET(req: Request) {
       headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
       cache: 'no-store',
     });
-    const data = await res.json().catch(() => ({}));
+    let dataUnknown: unknown = {};
+    try { dataUnknown = await res.json(); } catch { dataUnknown = {}; }
+    const data = dataUnknown as Record<string, unknown>;
     return NextResponse.json(data, { status: res.status });
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: 'Error interno del proxy APOD' }, { status: 500 });
   }
 }
