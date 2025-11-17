@@ -56,4 +56,3 @@ export function ReportCard({ title, summary, sector, slug, tags = [] }: ReportCa
   );
 }
 
-export default ReportCard;

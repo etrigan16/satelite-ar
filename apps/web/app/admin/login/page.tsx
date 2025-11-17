@@ -2,13 +2,14 @@
 // Seguridad: las credenciales se validan servidor-side y se setea cookie httpOnly.
 import LoginForm from '@/components/admin/login-form';
 
-export default function AdminLoginPage({
+export default async function AdminLoginPage({
   searchParams,
 }: {
-  searchParams?: { next?: string };
+  searchParams?: Promise<{ next?: string }>;
 }) {
   // Determinar destino deseado de forma segura.
-  const nextRaw = searchParams?.next ?? '/admin';
+  const resolvedSearchParams = await searchParams;
+  const nextRaw = resolvedSearchParams?.next ?? '/admin';
   const next = typeof nextRaw === 'string' && nextRaw.startsWith('/') ? nextRaw : '/admin';
 
   // Mostrar formulario cliente; este gestionará el redirect si ya hay sesión válida.

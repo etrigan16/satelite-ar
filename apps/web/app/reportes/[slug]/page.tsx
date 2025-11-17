@@ -10,12 +10,13 @@ import { Button } from "@/components/ui/button";
 import { getPostBySlug } from "@/lib/api";
 
 type PageProps = {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 };
 
 export default async function ReportDetailPage({ params }: PageProps) {
   // Obtiene el post por slug desde el backend.
-  const post = await getPostBySlug(params.slug);
+  const { slug } = await params;
+  const post = await getPostBySlug(slug);
   if (!post) {
     // Si no existe el recurso, devolvemos 404
     notFound();

@@ -1,5 +1,3 @@
-// Página de listado de reportes (B2B): filtrable por sector en el futuro.
-// Usamos Card + Badge (shadcn-style) y enlaces a detalle.
 import { ReportCard } from "@/components/shared/report-card";
 import { getPosts } from "@/lib/api";
 
@@ -38,3 +36,4 @@ export default async function ReportesPage() {
     </div>
   );
 }
+      
