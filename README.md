@@ -164,7 +164,6 @@ yarn test
 Mantén este README actualizado conforme avances: añadir endpoints, scripts y
 flujos de despliegue. Es el principal recurso para onboarding del equipo.
 -->
-# satelite.ar – Portal de Curación
 ## Configuración de credenciales de administración (Quick Protection)
 
 Este proyecto incluye una protección rápida para el panel de administración y las operaciones de creación/edición de posts/tags. Las credenciales y tokens se definen mediante variables de entorno.
