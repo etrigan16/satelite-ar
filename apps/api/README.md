@@ -1,5 +1,8 @@
 # API del portal satelite.ar
 
+> Trabajo Práctico Final de **Técnicas Avanzadas de la Programación** — **Universidad Metropolitana para la Educación y el Trabajo (UMET)**.
+> Backend del portal de curación de datos satelitales con arquitectura **MVC** y microservicios.
+
 - Backend del portal de curación de contenido y análisis de datos satelitales para Argentina.
 - Arquitectura: MVC desacoplado y microservicios (este servicio es el API).
 - Stack: Nest.js, Prisma (PostgreSQL), Vercel Serverless Functions.
@@ -10,6 +13,26 @@
 Servicio API (Nest.js) del portal satelite.ar. Usa Prisma (PostgreSQL) para el modelo de datos `Post` y `Tag` con relación muchos-a-muchos y estados `draft`/`published`.
 
 Este README explica cómo configurar entorno local, base de datos con Docker y comandos de Prisma usando Yarn.
+
+## Dónde buscar (MVC y CRUD)
+- Controladores (C):
+  - `apps/api/src/posts/posts.controller.ts`
+  - `apps/api/src/tags/tags.controller.ts`
+  - `apps/api/src/nasa/nasa.controller.ts`
+- Servicios (S):
+  - `apps/api/src/posts/posts.service.ts`
+  - `apps/api/src/tags/tags.service.ts`
+  - `apps/api/src/nasa/nasa.service.ts`
+- Módulos (M):
+  - `apps/api/src/posts/posts.module.ts`
+  - `apps/api/src/tags/tags.module.ts`
+  - `apps/api/src/nasa/nasa.module.ts`
+- DTOs y validación:
+  - `apps/api/src/posts/dto/*`
+  - `apps/api/src/tags/dto/*`
+- Prisma y migraciones:
+  - `apps/api/prisma/schema.prisma`
+  - `apps/api/prisma/migrations/*`
 
 ## Setup del proyecto
 
@@ -300,3 +323,23 @@ Nest is an MIT-licensed open source project. It can grow thanks to the sponsors 
 ## License
 
 Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+
+## Integración NASA (NasaProxy)
+- Clave de entorno: `NASA_API_KEY` definida en `apps/api/.env` o variables de Vercel.
+- Flujo:
+  - El frontend solicita APOD (u otros recursos) vía proxy interno admin.
+  - `nasa.service.ts` consulta las APIs de NASA con la `NASA_API_KEY`.
+  - Se retornan datos curados (ejemplo APOD: título, explicación, fecha, url/hdurl) sin exponer secretos.
+- Resultado y almacenamiento:
+  - Los datos pueden utilizarse para enriquecer Posts en el dominio (guardar contenido, fecha del evento y metadatos asociados) y quedar disponibles para peticiones de usuarios.
+- Seguridad:
+  - Mutaciones y rutas admin se protegen con `AdminGuard` validando `x-admin-token`.
+
+## Próximos pasos
+1. Documentar Swagger/OpenAPI del CRUD con ejemplos reales.
+2. Integrar nuevas APIs de NASA:
+   - **EONET**: curación de eventos de desastres naturales y endpoints públicos filtrables.
+   - **GIBS**: integración con capas de imágenes casi en tiempo real y metadatos relevantes (enlace con frontend para previsualización).
+   - **SMAP**: ingesta de humedad de suelo, almacenamiento periódico y consultas históricas.
+3. Añadir rate limiting y auditoría en endpoints públicos.
+4. Ajustar `directUrl` de Prisma para migraciones seguras en Vercel.
