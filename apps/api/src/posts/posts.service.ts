@@ -1,5 +1,5 @@
-import { Injectable } from "@nestjs/common";
-import { PrismaService } from "../prisma/prisma.service";
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
 
 // Servicio de Posts: encapsula lógica con Prisma
 @Injectable()
@@ -10,55 +10,76 @@ export class PostsService {
   private toSlug(input: string) {
     return input
       .toLowerCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^a-z0-9\s-]/g, "")
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9\s-]/g, '')
       .trim()
-      .replace(/\s+/g, "-")
-      .replace(/-+/g, "-");
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-');
   }
 
-  async list(params: { status?: "draft" | "published"; tagIds?: string[]; search?: string }) {
+  async list(params: {
+    status?: 'draft' | 'published';
+    tagIds?: string[];
+    search?: string;
+  }) {
     const { status, tagIds, search } = params;
     return this.prisma.post.findMany({
       where: {
-        ...(status ? { status: status.toUpperCase() as any } : {}),
-        ...(tagIds && tagIds.length > 0 ? { tags: { some: { id: { in: tagIds } } } } : {}),
+        ...(status
+          ? { status: status.toUpperCase() as 'DRAFT' | 'PUBLISHED' }
+          : {}),
+        ...(tagIds && tagIds.length > 0
+          ? { tags: { some: { id: { in: tagIds } } } }
+          : {}),
         ...(search
           ? {
               OR: [
-                { title: { contains: search, mode: "insensitive" } },
-                { content: { contains: search, mode: "insensitive" } },
+                { title: { contains: search, mode: 'insensitive' } },
+                { content: { contains: search, mode: 'insensitive' } },
               ],
             }
           : {}),
       },
       include: { tags: true },
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
     });
   }
 
   async findById(id: string) {
-    return this.prisma.post.findUnique({ where: { id }, include: { tags: true } });
+    return this.prisma.post.findUnique({
+      where: { id },
+      include: { tags: true },
+    });
   }
 
   async create(data: {
     title: string;
     content: string;
-    status?: "draft" | "published";
+    status?: 'draft' | 'published';
     eventDate: string;
     tagIds?: string[];
     sourceApiName?: string;
     sourceImageUrl?: string;
     sourceDataUrl?: string;
   }) {
-    const slug = this.toSlug(data.title);
+    // Generar slug único con manejo de duplicados
+    const baseSlug = this.toSlug(data.title);
+    let slug = baseSlug;
+    let counter = 1;
+    
+    // Verificar si el slug ya existe y generar uno único
+    while (await this.prisma.post.findUnique({ where: { slug } })) {
+      slug = `${baseSlug}-${counter}`;
+      counter++;
+    }
+    
     return this.prisma.post.create({
       data: {
         title: data.title,
         slug,
         content: data.content,
-        status: (data.status ?? "draft").toUpperCase() as any,
+        status: (data.status ?? 'draft').toUpperCase() as 'DRAFT' | 'PUBLISHED',
         eventDate: new Date(data.eventDate),
         sourceApiName: data.sourceApiName,
         sourceImageUrl: data.sourceImageUrl,
@@ -71,18 +92,37 @@ export class PostsService {
     });
   }
 
-  async update(id: string, data: {
-    title?: string;
-    content?: string;
-    status?: "draft" | "published";
-    eventDate?: string;
-    tagIds?: string[];
-    sourceApiName?: string;
-    sourceImageUrl?: string;
-    sourceDataUrl?: string;
-  }) {
-    // Si cambia el título, recalculamos slug
-    const slug = data.title ? this.toSlug(data.title) : undefined;
+  async update(
+    id: string,
+    data: {
+      title?: string;
+      content?: string;
+      status?: 'draft' | 'published';
+      eventDate?: string;
+      tagIds?: string[];
+      sourceApiName?: string;
+      sourceImageUrl?: string;
+      sourceDataUrl?: string;
+    },
+  ) {
+    // Si cambia el título, recalculamos slug y verificamos duplicados
+    let slug: string | undefined = undefined;
+    if (data.title) {
+      const baseSlug = this.toSlug(data.title);
+      slug = baseSlug;
+      let counter = 1;
+      
+      // Verificar si el slug ya existe (excluyendo el post actual)
+      while (await this.prisma.post.findFirst({ 
+        where: { 
+          slug,
+          NOT: { id }
+        } 
+      })) {
+        slug = `${baseSlug}-${counter}`;
+        counter++;
+      }
+    }
 
     return this.prisma.post.update({
       where: { id },
@@ -90,7 +130,9 @@ export class PostsService {
         ...(data.title ? { title: data.title } : {}),
         ...(slug ? { slug } : {}),
         ...(data.content ? { content: data.content } : {}),
-        ...(data.status ? { status: data.status.toUpperCase() as any } : {}),
+        ...(data.status
+          ? { status: data.status.toUpperCase() as 'DRAFT' | 'PUBLISHED' }
+          : {}),
         ...(data.eventDate ? { eventDate: new Date(data.eventDate) } : {}),
         ...(data.sourceApiName ? { sourceApiName: data.sourceApiName } : {}),
         ...(data.sourceImageUrl ? { sourceImageUrl: data.sourceImageUrl } : {}),

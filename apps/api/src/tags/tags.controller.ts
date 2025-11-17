@@ -1,23 +1,33 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from "@nestjs/common";
-import { TagsService } from "./tags.service";
-import { CreateTagDto } from "./dto/create-tag.dto";
-import { UpdateTagDto } from "./dto/update-tag.dto";
-import { AdminGuard } from "../common/guards/admin.guard";
+import {
+  Controller,
+  Get,
+  Param,
+  Post,
+  Body,
+  Patch,
+  Delete,
+  UseGuards,
+} from '@nestjs/common';
+import { TagsService } from './tags.service';
+import { CreateTagDto } from './dto/create-tag.dto';
+import { UpdateTagDto } from './dto/update-tag.dto';
+import { AdminGuard } from '../common/guards/admin.guard';
+import { Tag } from '@prisma/client';
 
 // Controlador REST para Tags
-@Controller("tags")
+@Controller('tags')
 export class TagsController {
   constructor(private readonly tagsService: TagsService) {}
 
   // GET /tags
   @Get()
-  async list() {
+  async list(): Promise<Tag[]> {
     return this.tagsService.list();
   }
 
   // GET /tags/:id
-  @Get(":id")
-  async getById(@Param("id") id: string) {
+  @Get(':id')
+  async getById(@Param('id') id: string) {
     return this.tagsService.findById(id);
   }
 
@@ -29,16 +39,19 @@ export class TagsController {
   }
 
   // PATCH /tags/:id
-  @Patch(":id")
+  @Patch(':id')
   @UseGuards(AdminGuard)
-  async update(@Param("id") id: string, @Body() dto: UpdateTagDto) {
+  async update(
+    @Param('id') id: string,
+    @Body() dto: UpdateTagDto,
+  ): Promise<Tag> {
     return this.tagsService.update(id, dto);
   }
 
   // DELETE /tags/:id
-  @Delete(":id")
+  @Delete(':id')
   @UseGuards(AdminGuard)
-  async remove(@Param("id") id: string) {
+  async remove(@Param('id') id: string) {
     await this.tagsService.remove(id);
     return { success: true };
   }

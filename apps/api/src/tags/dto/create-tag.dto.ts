@@ -7,6 +7,8 @@ export class CreateTagDto {
   // Nombre legible del tag (único)
   @IsString({ message: 'name debe ser texto' })
   @MinLength(2, { message: 'name debe tener al menos 2 caracteres' })
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
   name: string;
 }

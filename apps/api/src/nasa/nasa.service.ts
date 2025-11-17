@@ -1,7 +1,11 @@
 // Servicio Nasa: cerebro del proxy hacia la API de NASA (APOD)
 // Implementa integración segura, lectura de configuración y formateo de respuesta.
 import { HttpService } from '@nestjs/axios';
-import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
 
@@ -52,20 +56,32 @@ export class NasaService {
         url.searchParams.set('date', date);
       }
       // Convertimos Observable en Promesa
-      const { data } = await firstValueFrom(this.httpService.get(url.toString()));
+      const { data } = await firstValueFrom(
+        this.httpService.get<{
+          title: string;
+          explanation: string;
+          date: string;
+          hdurl?: string;
+          url: string;
+        }>(url.toString()),
+      );
 
       // Formateo: devolvemos solo campos necesarios por el frontend
+      const { title, explanation, date: apodDate, hdurl, url: imageUrl } = data;
       return {
-        title: data.title,
-        explanation: data.explanation,
-        date: data.date,
-        hdurl: data.hdurl || null, // asegurar null si no existe
-        url: data.url,
+        title,
+        explanation,
+        date: apodDate,
+        hdurl: hdurl || null, // asegurar null si no existe
+        url: imageUrl,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Manejo robusto: log y excepción controlada
-      const status = error?.response?.status;
-      const payload = error?.response?.data;
+      const axiosError = error as {
+        response?: { status?: number; data?: unknown };
+      };
+      const status = axiosError?.response?.status;
+      const payload = axiosError?.response?.data;
       this.logger.error('Error al contactar la API de NASA', payload);
       // En desarrollo, proveemos más contexto para diagnóstico
       const isDev = process.env.NODE_ENV !== 'production';
@@ -74,9 +90,11 @@ export class NasaService {
           message: 'Error al obtener datos de la API de NASA',
           statusCode: status ?? 500,
           nasa: payload ?? null,
-        } as any);
+        });
       }
-      throw new InternalServerErrorException('Error al obtener datos de la API de NASA');
+      throw new InternalServerErrorException(
+        'Error al obtener datos de la API de NASA',
+      );
     }
   }
 }
